@@ -1,35 +1,25 @@
 import type { Plugin } from 'vite';
-import pkg from './package.json';
+import fastGlob from 'fast-glob';
 
-// Node.JS específico
+//#region Node.JS específico
+import pkg from './package.json';
 import { writeFile, access, constants, copyFile, mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import fg from 'fast-glob';
+//#endregion
 
 const pathToShared = 'dist/client/assets/shared/';
-const preactFile = `preact.${pkg.devDependencies.preact.match(/[\d\.]+/)[0].replace(/\./g, '_')}.module.js`;
+const preactFile = `preact.${pkg.dependencies.preact.match(/[\d\.]+/)[0].replace(/\./g, '_')}.module.js`;
 const pathToPreactShared = join(pathToShared, preactFile);
 
-const bundlePreactPlugin = (): Plugin => {
-  return {
-    name: 'bundle-preact',
-    apply: 'build',
-    enforce: 'post',
-    async generateBundle(options, bundle) {
-      const pathToCompiledPreactModule = 'node_modules/preact/dist/preact.module.js';
+type IfDefined<T, K> =
+  K extends keyof T ? keyof T[K] : undefined;
 
-      // Podemos acessar Preact?
-      await access(pathToCompiledPreactModule, constants.R_OK);
+type SharedPluginParams = {
+  shared?: (IfDefined<typeof pkg, 'devDependencies'> | IfDefined<typeof pkg, 'dependencies'>)[];
+};
 
-      await mkdir(pathToShared, { recursive: true });
-
-      await copyFile(pathToCompiledPreactModule, pathToPreactShared);
-    }
-  };
-}
-
-const htmlPlugin = (): Plugin => {
-  // Bibliotecas compartilhadas
+const micro = (opts?: SharedPluginParams): Plugin => {
+  // Shared libraries
   const importmap = {
     imports: {
       preact: pathToPreactShared,
@@ -37,61 +27,49 @@ const htmlPlugin = (): Plugin => {
   };
 
   const importmapTemplate = `<script type="importmap">${JSON.stringify(importmap)}</script>`;
+  const headTemplate = `<head>
+${importmapTemplate}`;
 
   return {
-    name: 'html-transform',
+    name: 'bundle-preact',
     apply: 'build',
     enforce: 'post',
-    async generateBundle() {
-      console.log('auiq');
+    async closeBundle() {
+      const filesToTransform = await fastGlob('dist/client/**/*.html');
+      const processFile =
+        async (filePath: string) => {
+          const html = await readFile(filePath, 'utf8');
 
-      const filesToTransform = await fg('dist/client/**/*.html');
-
-      console.log(filesToTransform);
+          return writeFile(
+            filePath,
+            html.replace(
+              /<head>/,
+              headTemplate,
+            ),
+            'utf8'
+          );
+        };
 
       await Promise.all(
         filesToTransform.map(
-          async file => {
-            const html = await readFile(file, 'utf8');
-
-            return writeFile(
-              file,
-              html.replace(
-                /<head>/,
-                `<head>${importmapTemplate}`,
-              ),
-              'utf8'
-            );
-          }
+          processFile
         )
       );
     },
-  }
+    async generateBundle(options, bundle) {
+      const pathToCompiledPreactModule = 'node_modules/preact/dist/preact.module.js';
+
+      // Is Preact accessible?
+      await access(pathToCompiledPreactModule, constants.R_OK);
+
+      // Create shared folder
+      await mkdir(pathToShared, { recursive: true });
+
+      // Copy Preact module over
+      await copyFile(pathToCompiledPreactModule, pathToPreactShared);
+    }
+  };
 };
 
-const htmlPlugin2 = () => {
-  return {
-    name: 'html-transform',
-    async transformIndexHtml(html) {
-
-      console.log('oi: ', html);
-
-      console.log('teste');
-
-      const filesToTransform = await fg('dist/client/**/*.html');
-
-      console.log(filesToTransform);
-
-      return html.replace(
-        /<title>(.*?)<\/title>/,
-        `<title>Title replaced!</title>`,
-      )
-    },
-  }
-}
-
-export {
-  bundlePreactPlugin,
-  htmlPlugin,
-  htmlPlugin2,
-};
+export default
+  micro;
