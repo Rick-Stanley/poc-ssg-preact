@@ -3,10 +3,10 @@ import preactLogo from './assets/preact.svg'
 import './app.css'
 import Router, { Link, Route } from 'preact-router'
 
-const pages = import.meta.glob<typeof import('./pages/Home.tsx')>('./pages/*.jsx', { eager: true })
+const pages = import.meta.glob<typeof import('./pages/Home.tsx')>('./pages/*.tsx', { eager: true })
 
 const routes = Object.keys(pages).map((path) => {
-  const name = path.match(/\.\/pages\/(.*)\.jsx$/)?.at(1)
+  const name = path.match(/\.\/pages\/(.*)\.tsx$/)?.at(1)
 
   if (!name) throw new Error(`Not possible to recover page name from path: ${name}`);
   return {
@@ -16,7 +16,23 @@ const routes = Object.keys(pages).map((path) => {
   }
 })
 
-export function App() {
+type AppProp = {
+  url?: string;
+}
+
+export function App({ url }: AppProp) {
+  return (
+    <Router url={url}>
+        {
+          routes.map(({ path, component: RouteComponent }) => {
+            return <Route key={path} path={path} component={RouteComponent} />
+          })
+        }
+    </Router>
+  )
+};
+
+export function App0() {
   const [count, setCount] = useState(0)
 
   return (
@@ -34,7 +50,7 @@ export function App() {
           routes.map(({ name, path }) => {
             return (
               <li>
-                <Link href={path}>{name}</Link>
+                    <a href={path}>{name}</a>
               </li>
             )
           })

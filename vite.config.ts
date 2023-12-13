@@ -15,7 +15,11 @@ export default defineConfig({
   build: {
     minify: false,
     rollupOptions: {
-      // external: ['preact', 'preact-router', 'preact/hooks']
+      external: ['preact', 'preact-router', 'preact/hooks'],
+      output: {
+        entryFileNames: `assets/[name].js`,
+        chunkFileNames: `assets/[name].js`
+      }
     }
   }
 })
