@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks'
 import preactLogo from './assets/preact.svg'
 import './app.css'
-import Router, { Link, Route } from 'preact-router'
+import Router, { Route } from 'preact-router'
 
 const pages = import.meta.glob<typeof import('./pages/Home.tsx')>('./pages/*.tsx', { eager: true })
 
@@ -23,11 +23,11 @@ type AppProp = {
 export function App({ url }: AppProp) {
   return (
     <Router url={url}>
-        {
-          routes.map(({ path, component: RouteComponent }) => {
-            return <Route key={path} path={path} component={RouteComponent} />
-          })
-        }
+      {
+        routes.map(({ path, component: RouteComponent }) => {
+          return <Route key={path} path={path} component={RouteComponent} />
+        })
+      }
     </Router>
   )
 };
@@ -50,7 +50,7 @@ export function App0() {
           routes.map(({ name, path }) => {
             return (
               <li>
-                    <a href={path}>{name}</a>
+                <a href={path}>{name}</a>
               </li>
             )
           })
