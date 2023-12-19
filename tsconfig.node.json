@@ -8,8 +8,6 @@
     "jsx": "preserve"
   },
   "include": [
-    "vite.config.ts",
-    "src/**/*.tsx",
-    "src/vite-env.d.ts"
+    "**/*"
   ]
 }

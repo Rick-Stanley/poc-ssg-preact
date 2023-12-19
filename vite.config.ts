@@ -2,6 +2,7 @@ import { createRequire } from 'module'
 import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
 import { fileURLToPath } from 'url';
+import micro from './micro';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,6 +12,9 @@ export default defineConfig({
         // Change cwd to load Preact Babel plugins
         cwd: createRequire(import.meta.url).resolve('@preact/preset-vite')
       }
+    }),
+    micro({
+      shared: ['preact', 'preact-router', 'preact/compat', 'preact/jsx-runtime', 'preact-iso', 'preact/hooks'],
     })
   ],
   build: {
